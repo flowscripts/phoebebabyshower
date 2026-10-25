@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Gallery Viewer</title>
+  <link rel="icon" type="image/x-icon" href="https://i.ibb.co/pBskJryG/Coa-Maker-3.png">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- JSZip and FileSaver for ZIP downloading -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  
+  <style>
+
+
+
+    /* Custom clean scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+
+    /* Card hover title color transition */
+    .gallery-card .card-title {
+      transition: color 0.3s ease;
+    }
+    .gallery-card:hover .card-title {
+      color: #facc15; /* Bright yellow */
+    }
+
+    /* Card image lightness transition on hover */
+    .gallery-card-img {
+      transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+    .gallery-card:hover .gallery-card-img {
+      filter: brightness(1.25);
+      opacity: 0.9;
+    }
+
+.gallery-card:hover .card-img {
+  filter: brightness(2.5) !important;
+}
+
+.gallery-card:hover {
+  background-color: rgb(51, 75, 126) !important; /* A noticeably brighter version of your card background */
+  filter: brightness(1.15) !important; /* Brushes the whole card with a brighter look */
+}
+
+    /* Grab cursor during pan state */
+    .lightbox-img-container.can-drag {
+      cursor: grab;
+    }
+    .lightbox-img-container.is-dragging {
+      cursor: grabbing;
+    }
+
+    /* Skeleton loader animation */
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.7; }
+    }
+    .skeleton-loader {
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-yellow-500/30 selection:text-yellow-200">
+
+  <!-- TOP ACTION BAR (Header removed) -->
+  <div class="border-b border-slate-800/80 bg-slate-900/80 sticky top-0 z-30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-slate-300 tracking-wider uppercase">Photos</span>
+        <span class="text-xs font-mono text-yellow-400 bg-slate-800/80 border border-slate-700/50 px-2 py-0.5 rounded-full" id="total-count">0</span>
+      </div>
+
+      <!-- Download All Button -->
+      <button 
+        id="download-all-btn" 
+        onclick="downloadAllImages()"
+        class="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-yellow-500/10"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span id="download-all-text">Download All</span>
+      </button>
+    </div>
+  </div>
+<div
+  style="
+ background: #060057;
+background: linear-gradient(270deg, rgba(6, 0, 87, 1) 0%, rgba(16, 51, 56, 1) 100%);
+    color: white;
+
+    padding: clamp(2.5rem, 2vw, 2.5rem);
+
+  "
+>
+  <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <P style="font-size: 24px;">Notice</P>
+     <P style="font-size: 18px;">For any takedown requests, please contact
+        <a class="t46" style="text-decoration: underline;" href="mailto:zaynnoman3@gmail.com">zaynnoman3@gmail.com</a>
+        , providing the image file name(s).</P>
+  </p>
+</div>
+<style>.t46:hover{
+
+color: yellow;
+
+}</style>
+  <!-- MAIN GALLERY CONTENT -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow">
+    <!-- GALLERY GRID -->
+    <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+      <!-- Dynamic thumbnail cards generated from JavaScript -->
+    </div>
+  </main>
+
+  <!-- LIGHTBOX MODAL WITH ZOOM, PAN & MOBILE TOUCH SWIPE -->
+  <div id="lightbox" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-md flex flex-col justify-between select-none">
+    
+    <!-- Lightbox Header -->
+    <div class="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/80 z-20">
+      <div class="flex items-center gap-3 truncate">
+        <span id="lightbox-counter" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">0 / 0</span>
+        <div class="flex items-center gap-2 truncate">
+          <img id="lightbox-crown" src="https://i.ibb.co/Y4trPB9C/download.png" alt="Crown" class="w-4 h-4 object-contain hidden shrink-0" />
+          <h2 id="lightbox-title" class="text-xs sm:text-sm font-medium text-slate-200 truncate select-text cursor-text">Image Title</h2>
+        </div>
+      </div>
+
+      <!-- Zoom Toolbar & Actions -->
+      <div class="flex items-center gap-1 sm:gap-2">
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 mr-2">
+          <button 
+            onclick="zoomOut()" 
+            class="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+            title="Zoom Out (-)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+            </svg>
+          </button>
+          
+          <button 
+            onclick="resetZoom()" 
+            id="zoom-level-btn"
+            class="px-2 text-xs font-mono text-slate-300 hover:text-yellow-400 transition-colors"
+            title="Reset Zoom (0)"
+          >
+            100%
+          </button>
+
+          <button 
+            onclick="zoomIn()" 
+            class="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+            title="Zoom In (+)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+          </button>
+        </div>
+
+        <button 
+          onclick="downloadSingleFromLightbox()" 
+          class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs px-3 py-1.5 rounded-lg transition-colors"
+          title="Download Current Image"
+        >
+          <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span class="hidden sm:inline">Download</span>
+        </button>
+
+        <button 
+          onclick="closeLightbox()" 
+          class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" 
+          title="Close (Esc)"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lightbox Main Stage -->
+    <div 
+      id="lightbox-stage" 
+      class="relative flex-1 overflow-hidden flex items-center justify-center p-4 select-none cursor-default"
+    >
+      <!-- Navigation Controls -->
+      <button 
+        onclick="prevImage()" 
+        class="absolute left-4 p-2.5 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors z-30"
+        title="Previous Image (Left Arrow)"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <!-- Zoom/Pan Container -->
+      <div id="img-wrapper" class="lightbox-img-container relative flex items-center justify-center max-w-full max-h-full">
+        <img 
+          id="lightbox-img" 
+          src="" 
+          alt="" 
+          class="max-w-full max-h-[80vh] object-contain rounded border border-slate-800/80 shadow-2xl transition-transform duration-75 ease-out origin-center" 
+          draggable="false"
+        />
+      </div>
+
+      <button 
+        onclick="nextImage()" 
+        class="absolute right-4 p-2.5 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors z-30"
+        title="Next Image (Right Arrow)"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Lightbox Footer -->
+    <div class="py-2.5 px-4 border-t border-slate-800/80 text-center text-xs text-slate-500 bg-slate-950/80 z-20">
+      Swipe or Left/Right Arrows to Navigate &bull; Wheel to Zoom &bull; Drag to Pan &bull; Esc to Close
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       IMAGE DATA ARRAY WITH NEW INSERTIONS & DE-DUPLICATION
+       ========================================================================== */
+    const RAW_IMAGES = [
+      { title: "DSC04728.jpg", src: "https://i.ibb.co/ymC77BtK/DSC04728.jpg", isChoice: true },
+      { title: "DSC04775.jpg", src: "https://i.ibb.co/jZyy4GfL/DSC04775.jpg" },
+      { title: "DSC04723.jpg", src: "https://i.ibb.co/1tMQgmHy/DSC04723.jpg" },
+      { title: "DSC04743.jpg", src: "https://i.ibb.co/RkjKwMTm/DSC04743.jpg" },
+      { title: "DSC04747.jpg", src: "https://i.ibb.co/cc5B4qY7/DSC04747.jpg" },
+      { title: "DSC04749.jpg", src: "https://i.ibb.co/DDfkZhvC/DSC04749.jpg" },
+      { title: "DSC04497.jpg", src: "https://i.ibb.co/V62vTqN/DSC04497.jpg" },
+      { title: "DSC04505.jpg", src: "https://i.ibb.co/Y7RM2ZQd/DSC04505.jpg" },
+      { title: "DSC04506.jpg", src: "https://i.ibb.co/JFGV7d7b/DSC04506.jpg" },
+      { title: "DSC04499.jpg", src: "https://i.ibb.co/XZsNJh1b/DSC04499.jpg" }, // after DSC04506.jpg
+      { title: "DSC04708.jpg", src: "https://i.ibb.co/cS27hDFn/DSC04708.jpg" }, // after DSC04499.jpg
+      { title: "DSC04511.jpg", src: "https://i.ibb.co/C5ccC1MH/DSC04511.jpg" },
+      { title: "DSC04515.jpg", src: "https://i.ibb.co/Kp3J0qnS/DSC04515.jpg" }, // before DSC04516.jpg
+      { title: "DSC04516.jpg", src: "https://i.ibb.co/KcqLhBnS/DSC04516.jpg" },
+      { title: "DSC04519.jpg", src: "https://i.ibb.co/0yQKxWPH/DSC04519.jpg" },
+      { title: "DSC04593.jpg", src: "https://i.ibb.co/qMwGYVCf/DSC04593.jpg" },
+      { title: "DSC04597.jpg", src: "https://i.ibb.co/G3b8ZZtN/DSC04597.jpg" },
+      { title: "DSC04605.jpg", src: "https://i.ibb.co/W4knCxZ2/DSC04605.jpg" },
+      { title: "DSC04634.jpg", src: "https://i.ibb.co/3y7FFrK1/DSC04634.jpg" },
+      { title: "DSC04641.jpg", src: "https://i.ibb.co/Hp4Pms5D/DSC04641.jpg" },
+      { title: "DSC04642.jpg", src: "https://i.ibb.co/pBBz3ndf/DSC04642.jpg" },
+      { title: "DSC04648.jpg", src: "https://i.ibb.co/QF3Cn9Zz/DSC04648.jpg" },
+      { title: "DSC04657.jpg", src: "https://i.ibb.co/1G6w8DF3/DSC04657.jpg" },
+      { title: "DSC04664.jpg", src: "https://i.ibb.co/Xx4BXrZn/DSC04664.jpg" },
+      { title: "DSC04678.jpg", src: "https://i.ibb.co/xSs81MRN/DSC04678.jpg" },
+      { title: "DSC04680.jpg", src: "https://i.ibb.co/QFDNZ2Fc/DSC04680.jpg" },
+      { title: "DSC04698.jpg", src: "https://i.ibb.co/dwgKkSpV/DSC04698.jpg" },
+      { title: "DSC04705.jpg", src: "https://i.ibb.co/qqbQyqN/DSC04705.jpg" },
+      { title: "DSC04719.jpg", src: "https://i.ibb.co/1fMjX8L1/DSC04719.jpg" },
+      { title: "DSC04721.jpg", src: "https://i.ibb.co/b5rJN6F8/DSC04721.jpg" },
+      { title: "DSC04753.jpg", src: "https://i.ibb.co/5gTkWgyk/DSC04753.jpg" },
+      { title: "DSC04785.jpg", src: "https://i.ibb.co/N617Rb4c/DSC04785.jpg" },
+      { title: "DSC04776.jpg", src: "https://i.ibb.co/VY17vrFd/DSC04776.jpg" },
+      { title: "DSC04779.jpg", src: "https://i.ibb.co/C35N3Hs2/DSC04779.jpg" },
+      { title: "DSC04782.jpg", src: "https://i.ibb.co/M5ZGnTbH/DSC04782.jpg" },
+      { title: "DSC04791.jpg", src: "https://i.ibb.co/1fHCxQcR/DSC04791.jpg" },
+      { title: "DSC04796.jpg", src: "https://i.ibb.co/sJcxLp1G/DSC04796.jpg" },
+      { title: "DSC04567.jpg", src: "https://i.ibb.co/wFCk425B/DSC04567.jpg" },
+      { title: "DSC04755.jpg", src: "https://i.ibb.co/nMnYgXVw/DSC04755.jpg" },
+      { title: "DSC04675.jpg", src: "https://i.ibb.co/xtcC3rTK/DSC04675.jpg" },
+      { title: "DSC04557.jpg", src: "https://i.ibb.co/zhrP5Gt7/DSC04557.jpg" },
+      { title: "DSC04583.jpg", src: "https://i.ibb.co/FL4FNQHT/DSC04583.jpg" },
+      { title: "DSC04643.jpg", src: "https://i.ibb.co/39zd6Zdd/DSC04643.jpg" },
+      { title: "DSC04533.jpg", src: "https://i.ibb.co/GfGy3tsC/DSC04533.jpg" },
+      
+    ];
+
+    // Deduplicate array based on filename
+    const seenTitles = new Set();
+    const IMAGES = RAW_IMAGES.filter(img => {
+      if (seenTitles.has(img.title)) return false;
+      seenTitles.add(img.title);
+      return true;
+    });
+
+    // Cache for 200px canvas-generated thumbnails (URL -> base64 data URL)
+    const thumbnailCache = new Map();
+
+    // Lightbox & Zoom States
+    let currentIndex = 0;
+    let zoomLevel = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    // Mobile Swipe Gesture State
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    // DOM References
+    const galleryGrid = document.getElementById('gallery-grid');
+    const totalCount = document.getElementById('total-count');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const imgWrapper = document.getElementById('img-wrapper');
+    const lightboxTitle = document.getElementById('lightbox-title');
+    const lightboxCounter = document.getElementById('lightbox-counter');
+    const zoomLevelBtn = document.getElementById('zoom-level-btn');
+    const downloadAllBtn = document.getElementById('download-all-btn');
+    const downloadAllText = document.getElementById('download-all-text');
+
+    // Observer for Lazy Loading and Thumbnail Generation
+    let observer;
+
+    // Init
+    window.addEventListener('DOMContentLoaded', () => {
+      totalCount.textContent = IMAGES.length;
+      setupIntersectionObserver();
+      renderGallery();
+      setupKeyboardControls();
+      setupZoomAndPan();
+      setupMobileSwipe();
+    });
+
+    /* Generate and cache tiny 200px width base64 JPEG thumbnail */
+    function generate200pxThumbnail(url) {
+      if (thumbnailCache.has(url)) {
+        return Promise.resolve(thumbnailCache.get(url));
+      }
+
+      return new Promise((resolve) => {
+        const tempImg = new Image();
+        tempImg.crossOrigin = "anonymous";
+        
+        tempImg.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Target fixed width 200px maintaining aspect ratio
+          const targetWidth = 200;
+          const scale = targetWidth / tempImg.width;
+          canvas.width = targetWidth;
+          canvas.height = tempImg.height * scale;
+
+          ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+          try {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.65); // 65% JPEG compression
+            thumbnailCache.set(url, dataUrl);
+            resolve(dataUrl);
+          } catch(e) {
+            // Fallback to original URL if CORS blocks canvas export
+            thumbnailCache.set(url, url);
+            resolve(url);
+          }
+        };
+
+        tempImg.onerror = function() {
+          thumbnailCache.set(url, url);
+          resolve(url);
+        };
+
+        tempImg.src = url;
+      });
+    }
+
+    /* Setup IntersectionObserver to only load/process cards in viewport */
+    function setupIntersectionObserver() {
+      observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const card = entry.target;
+            const index = card.dataset.index;
+            const imgData = IMAGES[index];
+            const imgElement = card.querySelector('img');
+            const skeleton = card.querySelector('.skeleton-loader');
+
+            generate200pxThumbnail(imgData.src).then(thumbUrl => {
+              imgElement.src = thumbUrl;
+              imgElement.onload = () => {
+                imgElement.classList.remove('opacity-0');
+                if (skeleton) skeleton.classList.add('hidden');
+              };
+            });
+
+            obs.unobserve(card);
+          }
+        });
+      }, {
+        rootMargin: '100px 0px', // Preload cards slightly before scrolling into view
+        threshold: 0.01
+      });
+    }
+
+    // Render Gallery Cards
+    function renderGallery() {
+      galleryGrid.innerHTML = '';
+      
+      IMAGES.forEach((img, index) => {
+        const card = document.createElement('div');
+        card.dataset.index = index;
+        card.className = 'gallery-card bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-200 hover:border-slate-700 shadow-md hover:shadow-xl group cursor-pointer';
+        card.onclick = (e) => {
+          // Open lightbox unless user is highlighting title text
+          if (window.getSelection() && window.getSelection().toString().length > 0) return;
+          openLightbox(index);
+        };
+
+        const choiceBadge = img.isChoice ? `
+          <div class="absolute top-2 left-2 z-10 bg-emerald-950/80 border border-emerald-700/60 text-emerald-400 text-[10px] font-medium px-2 py-0.5 rounded-md backdrop-blur-sm shadow flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Photographer's Choice
+          </div>
+        ` : '';
+
+        const crownIcon = img.isChoice ? `
+          <img src="https://i.ibb.co/Y4trPB9C/download.png" alt="Crown" class="w-3.5 h-3.5 object-contain inline-block shrink-0" />
+        ` : '';
+
+        card.innerHTML = `
+          <div class="relative aspect-[4/3] bg-slate-950 overflow-hidden">
+            ${choiceBadge}
+            <!-- Skeleton placeholder -->
+            <div class="skeleton-loader absolute inset-0 bg-slate-800 flex flex-col items-center justify-center gap-1.5 text-slate-500 z-0">
+              <svg class="w-7 h-7 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-[10px] font-mono tracking-wider opacity-70 uppercase">Loading...</span>
+            </div>
+            <img 
+              src="" 
+              alt="${img.title}" 
+              class="gallery-card-img w-full h-full object-cover opacity-0 relative z-1"
+              draggable="false"
+            />
+          </div>
+          <div class="p-3 flex items-center justify-between gap-2 border-t border-slate-800/80 bg-slate-900">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1" onclick="event.stopPropagation()">
+              ${crownIcon}
+              <span class="card-title text-xs font-mono text-slate-300 truncate select-text cursor-text" title="${img.title}">${img.title}</span>
+            </div>
+            <button 
+              onclick="downloadSingle(event, ${index})" 
+              class="p-1.5 text-slate-400 hover:text-yellow-400 hover:bg-slate-800 rounded transition-colors shrink-0"
+              title="Download High-Res Image"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+            </button>
+          </div>
+        `;
+
+        galleryGrid.appendChild(card);
+        observer.observe(card);
+      });
+    }
+
+    /* Lightbox Core Logic */
+    function openLightbox(index) {
+      currentIndex = index;
+      resetZoom();
+      updateLightbox();
+      lightbox.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      lightbox.classList.add('hidden');
+      document.body.style.overflow = '';
+      resetZoom();
+    }
+
+    function updateLightbox() {
+      const item = IMAGES[currentIndex];
+      const lightboxCrown = document.getElementById('lightbox-crown');
+      lightboxImg.src = item.src;
+      lightboxImg.alt = item.title;
+      lightboxTitle.textContent = item.title;
+      lightboxCounter.textContent = `${currentIndex + 1} / ${IMAGES.length}`;
+
+      if (item.isChoice) {
+        lightboxCrown.classList.remove('hidden');
+      } else {
+        lightboxCrown.classList.add('hidden');
+      }
+
+      resetZoom();
+    }
+
+    function updateLightbox() {
+      const item = IMAGES[currentIndex];
+      lightboxImg.src = item.src;
+      lightboxImg.alt = item.title;
+
+      if (item.isChoice) {
+        lightboxTitle.innerHTML = `<img src="https://i.ibb.co/Y4trPB9C/download.png" class="w-4 h-4 inline-block mr-1.5 align-sub" alt="Crown" /><span class="text-emerald-400 font-semibold mr-2">[Photographer's Choice]</span>${item.title}`;
+      } else {
+        lightboxTitle.textContent = item.title;
+      }
+
+      lightboxCounter.textContent = `${currentIndex + 1} / ${IMAGES.length}`;
+      resetZoom();
+    }
+
+    function nextImage() {
+      currentIndex = (currentIndex + 1) % IMAGES.length;
+      updateLightbox();
+    }
+
+    function prevImage() {
+      currentIndex = (currentIndex - 1 + IMAGES.length) % IMAGES.length;
+      updateLightbox();
+    }
+
+    /* Zoom & Pan Implementation */
+    function setTransform() {
+      lightboxImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+      zoomLevelBtn.textContent = `${Math.round(zoomLevel * 100)}%`;
+
+      if (zoomLevel > 1) {
+        imgWrapper.classList.add('can-drag');
+      } else {
+        imgWrapper.classList.remove('can-drag');
+      }
+    }
+
+    function zoomIn() {
+      if (zoomLevel < 4) {
+        zoomLevel = Math.min(4, zoomLevel + 0.25);
+        setTransform();
+      }
+    }
+
+    function zoomOut() {
+      if (zoomLevel > 0.5) {
+        zoomLevel = Math.max(0.5, zoomLevel - 0.25);
+        if (zoomLevel <= 1) {
+          panX = 0;
+          panY = 0;
+        }
+        setTransform();
+      }
+    }
+
+    function resetZoom() {
+      zoomLevel = 1;
+      panX = 0;
+      panY = 0;
+      setTransform();
+    }
+
+    function setupZoomAndPan() {
+      const stage = document.getElementById('lightbox-stage');
+
+      // Mouse Wheel Zoom
+      stage.addEventListener('wheel', (e) => {
+        if (lightbox.classList.contains('hidden')) return;
+        e.preventDefault();
+
+        if (e.deltaY < 0) {
+          zoomIn();
+        } else {
+          zoomOut();
+        }
+      }, { passive: false });
+
+      // Drag / Pan Events
+      imgWrapper.addEventListener('mousedown', (e) => {
+        if (zoomLevel <= 1) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+        imgWrapper.classList.add('is-dragging');
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        setTransform();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+        imgWrapper.classList.remove('is-dragging');
+      });
+    }
+
+    /* Mobile Touch Swipe Implementation for Lightbox Stage */
+    function setupMobileSwipe() {
+      const stage = document.getElementById('lightbox-stage');
+
+      stage.addEventListener('touchstart', (e) => {
+        if (lightbox.classList.contains('hidden')) return;
+        if (e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      stage.addEventListener('touchend', (e) => {
+        if (lightbox.classList.contains('hidden')) return;
+        // Skip swipe navigation when zoomed in so panning works naturally
+        if (zoomLevel > 1) return;
+
+        if (e.changedTouches.length === 1) {
+          touchEndX = e.changedTouches[0].clientX;
+          touchEndY = e.changedTouches[0].clientY;
+          handleSwipeGesture();
+        }
+      }, { passive: true });
+    }
+
+    function handleSwipeGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      const minSwipeDistance = 45; // Minimum horizontal px distance required
+
+      // Horizontal swipe dominates over vertical movement
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX < 0) {
+          nextImage(); // Swipe Left -> Next
+        } else {
+          prevImage(); // Swipe Right -> Previous
+        }
+      }
+    }
+
+    function setupKeyboardControls() {
+      window.addEventListener('keydown', (e) => {
+        if (lightbox.classList.contains('hidden')) return;
+
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === '+' || e.key === '=') zoomIn();
+        if (e.key === '-' || e.key === '_') zoomOut();
+        if (e.key === '0') resetZoom();
+      });
+    }
+
+    /* Download Functions */
+    async function fetchAndDownload(url, filename) {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        saveAs(blob, filename);
+      } catch (err) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
+
+    function downloadSingle(event, index) {
+      event.stopPropagation();
+      const img = IMAGES[index];
+      fetchAndDownload(img.src, img.title);
+    }
+
+    function downloadSingleFromLightbox() {
+      const img = IMAGES[currentIndex];
+      fetchAndDownload(img.src, img.title);
+    }
+
+    // Download All Images as a ZIP File
+    async function downloadAllImages() {
+      if (IMAGES.length === 0) return;
+
+      downloadAllBtn.disabled = true;
+      downloadAllText.textContent = "Zipping (0%)...";
+
+      const zip = new JSZip();
+      let completed = 0;
+
+      for (let i = 0; i < IMAGES.length; i++) {
+        const img = IMAGES[i];
+
+        try {
+          const response = await fetch(img.src);
+          const blob = await response.blob();
+          zip.file(img.title, blob);
+        } catch (err) {
+          console.error(`Failed to add ${img.title} to ZIP:`, err);
+        }
+
+        completed++;
+        const percent = Math.round((completed / IMAGES.length) * 100);
+        downloadAllText.textContent = `Zipping (${percent}%)...`;
+      }
+
+      try {
+        downloadAllText.textContent = "Compressing...";
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, `photo-gallery.zip`);
+      } catch (err) {
+        console.error("ZIP creation failed:", err);
+      } finally {
+        downloadAllBtn.disabled = false;
+        downloadAllText.textContent = "Download All";
+      }
+    }
+  </script>
+
+
+</body>
+</html>
