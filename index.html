@@ -12,9 +12,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   
   <style>
-
-
-
     /* Custom clean scrollbars */
     ::-webkit-scrollbar {
       width: 6px;
@@ -45,14 +42,14 @@
       opacity: 0.9;
     }
 
-.gallery-card:hover .card-img {
-  filter: brightness(2.5) !important;
-}
+    .gallery-card:hover .card-img {
+      filter: brightness(2.5) !important;
+    }
 
-.gallery-card:hover {
-  background-color: rgb(51, 75, 126) !important; /* A noticeably brighter version of your card background */
-  filter: brightness(1.15) !important; /* Brushes the whole card with a brighter look */
-}
+    .gallery-card:hover {
+      background-color: rgb(51, 75, 126) !important;
+      filter: brightness(1.15) !important;
+    }
 
     /* Grab cursor during pan state */
     .lightbox-img-container.can-drag {
@@ -74,19 +71,22 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-yellow-500/30 selection:text-yellow-200">
 
-  <!-- TOP ACTION BAR (Header removed) -->
+  <!-- TOP ACTION BAR (Responsive Wrap) -->
   <div class="border-b border-slate-800/80 bg-slate-900/80 sticky top-0 z-30 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="text-xs font-semibold text-slate-300 tracking-wider uppercase">Photos</span>
-        <span class="text-xs font-mono text-yellow-400 bg-slate-800/80 border border-slate-700/50 px-2 py-0.5 rounded-full" id="total-count">0</span>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <img src="https://i.ibb.co/WNGr2JjK/download54321.png" class="w-36 sm:w-48 object-contain" alt="Zayn Photography">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-mono text-yellow-400 bg-slate-800/80 border border-slate-700/50 px-2 py-0.5 rounded-full" id="total-count">0</span>
+          <span class="text-xs font-semibold text-slate-300 tracking-wider uppercase">Photos</span>
+        </div>
       </div>
 
       <!-- Download All Button -->
       <button 
         id="download-all-btn" 
         onclick="downloadAllImages()"
-        class="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-yellow-500/10"
+        class="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-yellow-500/10 shrink-0"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
@@ -95,28 +95,44 @@
       </button>
     </div>
   </div>
-<div
-  style="
- background: #060057;
-background: linear-gradient(270deg, rgba(6, 0, 87, 1) 0%, rgba(16, 51, 56, 1) 100%);
-    color: white;
 
-    padding: clamp(2.5rem, 2vw, 2.5rem);
+  <!-- NEW SAMPLE TEXT BANNER -->
+  <div
+    style="
+      background: #000000;
+      background: linear-gradient(180deg, rgba(15, 15, 15, 1) 0%, rgb(20, 20, 20) 100%);
+      color: white;
+      padding: clamp(1.5rem, 2vw, 2.5rem);
+    "
+  >
+    <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <span style="font-size: 25px; font-weight: bold;">Phoebe's Baby Shower</span>
+    </p>
+  </div>
 
-  "
->
-  <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    <P style="font-size: 24px;">Notice</P>
-     <P style="font-size: 18px;">For any takedown requests, please contact
+  <!-- NOTICE BANNER -->
+  <div
+    style="
+      background: #060057;
+      background: linear-gradient(270deg, rgba(6, 0, 87, 1) 0%, rgba(16, 51, 56, 1) 100%);
+      color: white;
+      padding: clamp(2.5rem, 2vw, 2.5rem);
+    "
+  >
+    <p style="margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <span style="font-size: 24px;">Notice</span><br>
+      <span style="font-size: 18px;">For any takedown requests, please contact
         <a class="t46" style="text-decoration: underline;" href="mailto:zaynnoman3@gmail.com">zaynnoman3@gmail.com</a>
-        , providing the image file name(s).</P>
-  </p>
-</div>
-<style>.t46:hover{
+        , providing the image file name(s).
+      </span>
+    </p>
+  </div>
+  <style>
+    .t46:hover {
+      color: yellow;
+    }
+  </style>
 
-color: yellow;
-
-}</style>
   <!-- MAIN GALLERY CONTENT -->
   <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-grow">
     <!-- GALLERY GRID -->
@@ -129,18 +145,17 @@ color: yellow;
   <div id="lightbox" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-md flex flex-col justify-between select-none">
     
     <!-- Lightbox Header -->
-    <div class="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/80 z-20">
+    <div class="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/80 z-20 gap-2">
       <div class="flex items-center gap-3 truncate">
-        <span id="lightbox-counter" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">0 / 0</span>
+        <span id="lightbox-counter" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded shrink-0">0 / 0</span>
         <div class="flex items-center gap-2 truncate">
-          <img id="lightbox-crown" src="https://i.ibb.co/Y4trPB9C/download.png" alt="Crown" class="w-4 h-4 object-contain hidden shrink-0" />
           <h2 id="lightbox-title" class="text-xs sm:text-sm font-medium text-slate-200 truncate select-text cursor-text">Image Title</h2>
         </div>
       </div>
 
       <!-- Zoom Toolbar & Actions -->
-      <div class="flex items-center gap-1 sm:gap-2">
-        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 mr-2">
+      <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div class="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 mr-2">
           <button 
             onclick="zoomOut()" 
             class="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
@@ -239,9 +254,6 @@ color: yellow;
   </div>
 
   <script>
-    /* ==========================================================================
-       IMAGE DATA ARRAY WITH NEW INSERTIONS & DE-DUPLICATION
-       ========================================================================== */
     const RAW_IMAGES = [
       { title: "DSC04728.jpg", src: "https://i.ibb.co/ymC77BtK/DSC04728.jpg", isChoice: true },
       { title: "DSC04775.jpg", src: "https://i.ibb.co/jZyy4GfL/DSC04775.jpg" },
@@ -252,10 +264,10 @@ color: yellow;
       { title: "DSC04497.jpg", src: "https://i.ibb.co/V62vTqN/DSC04497.jpg" },
       { title: "DSC04505.jpg", src: "https://i.ibb.co/Y7RM2ZQd/DSC04505.jpg" },
       { title: "DSC04506.jpg", src: "https://i.ibb.co/JFGV7d7b/DSC04506.jpg" },
-      { title: "DSC04499.jpg", src: "https://i.ibb.co/XZsNJh1b/DSC04499.jpg" }, // after DSC04506.jpg
-      { title: "DSC04708.jpg", src: "https://i.ibb.co/cS27hDFn/DSC04708.jpg" }, // after DSC04499.jpg
+      { title: "DSC04499.jpg", src: "https://i.ibb.co/XZsNJh1b/DSC04499.jpg" },
+      { title: "DSC04708.jpg", src: "https://i.ibb.co/cS27hDFn/DSC04708.jpg" },
       { title: "DSC04511.jpg", src: "https://i.ibb.co/C5ccC1MH/DSC04511.jpg" },
-      { title: "DSC04515.jpg", src: "https://i.ibb.co/Kp3J0qnS/DSC04515.jpg" }, // before DSC04516.jpg
+      { title: "DSC04515.jpg", src: "https://i.ibb.co/Kp3J0qnS/DSC04515.jpg" },
       { title: "DSC04516.jpg", src: "https://i.ibb.co/KcqLhBnS/DSC04516.jpg" },
       { title: "DSC04519.jpg", src: "https://i.ibb.co/0yQKxWPH/DSC04519.jpg" },
       { title: "DSC04593.jpg", src: "https://i.ibb.co/qMwGYVCf/DSC04593.jpg" },
@@ -286,11 +298,9 @@ color: yellow;
       { title: "DSC04557.jpg", src: "https://i.ibb.co/zhrP5Gt7/DSC04557.jpg" },
       { title: "DSC04583.jpg", src: "https://i.ibb.co/FL4FNQHT/DSC04583.jpg" },
       { title: "DSC04643.jpg", src: "https://i.ibb.co/39zd6Zdd/DSC04643.jpg" },
-      { title: "DSC04533.jpg", src: "https://i.ibb.co/GfGy3tsC/DSC04533.jpg" },
-      
+      { title: "DSC04533.jpg", src: "https://i.ibb.co/GfGy3tsC/DSC04533.jpg" }
     ];
 
-    // Deduplicate array based on filename
     const seenTitles = new Set();
     const IMAGES = RAW_IMAGES.filter(img => {
       if (seenTitles.has(img.title)) return false;
@@ -298,10 +308,8 @@ color: yellow;
       return true;
     });
 
-    // Cache for 200px canvas-generated thumbnails (URL -> base64 data URL)
     const thumbnailCache = new Map();
 
-    // Lightbox & Zoom States
     let currentIndex = 0;
     let zoomLevel = 1;
     let panX = 0;
@@ -310,13 +318,11 @@ color: yellow;
     let startX = 0;
     let startY = 0;
 
-    // Mobile Swipe Gesture State
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
     let touchEndY = 0;
 
-    // DOM References
     const galleryGrid = document.getElementById('gallery-grid');
     const totalCount = document.getElementById('total-count');
     const lightbox = document.getElementById('lightbox');
@@ -328,10 +334,8 @@ color: yellow;
     const downloadAllBtn = document.getElementById('download-all-btn');
     const downloadAllText = document.getElementById('download-all-text');
 
-    // Observer for Lazy Loading and Thumbnail Generation
     let observer;
 
-    // Init
     window.addEventListener('DOMContentLoaded', () => {
       totalCount.textContent = IMAGES.length;
       setupIntersectionObserver();
@@ -341,7 +345,6 @@ color: yellow;
       setupMobileSwipe();
     });
 
-    /* Generate and cache tiny 200px width base64 JPEG thumbnail */
     function generate200pxThumbnail(url) {
       if (thumbnailCache.has(url)) {
         return Promise.resolve(thumbnailCache.get(url));
@@ -355,7 +358,6 @@ color: yellow;
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
-          // Target fixed width 200px maintaining aspect ratio
           const targetWidth = 200;
           const scale = targetWidth / tempImg.width;
           canvas.width = targetWidth;
@@ -363,11 +365,10 @@ color: yellow;
 
           ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
           try {
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.65); // 65% JPEG compression
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
             thumbnailCache.set(url, dataUrl);
             resolve(dataUrl);
           } catch(e) {
-            // Fallback to original URL if CORS blocks canvas export
             thumbnailCache.set(url, url);
             resolve(url);
           }
@@ -382,7 +383,6 @@ color: yellow;
       });
     }
 
-    /* Setup IntersectionObserver to only load/process cards in viewport */
     function setupIntersectionObserver() {
       observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
@@ -405,12 +405,11 @@ color: yellow;
           }
         });
       }, {
-        rootMargin: '100px 0px', // Preload cards slightly before scrolling into view
+        rootMargin: '100px 0px',
         threshold: 0.01
       });
     }
 
-    // Render Gallery Cards
     function renderGallery() {
       galleryGrid.innerHTML = '';
       
@@ -418,8 +417,7 @@ color: yellow;
         const card = document.createElement('div');
         card.dataset.index = index;
         card.className = 'gallery-card bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between transition-all duration-200 hover:border-slate-700 shadow-md hover:shadow-xl group cursor-pointer';
-        card.onclick = (e) => {
-          // Open lightbox unless user is highlighting title text
+        card.onclick = () => {
           if (window.getSelection() && window.getSelection().toString().length > 0) return;
           openLightbox(index);
         };
@@ -438,7 +436,6 @@ color: yellow;
         card.innerHTML = `
           <div class="relative aspect-[4/3] bg-slate-950 overflow-hidden">
             ${choiceBadge}
-            <!-- Skeleton placeholder -->
             <div class="skeleton-loader absolute inset-0 bg-slate-800 flex flex-col items-center justify-center gap-1.5 text-slate-500 z-0">
               <svg class="w-7 h-7 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -474,7 +471,6 @@ color: yellow;
       });
     }
 
-    /* Lightbox Core Logic */
     function openLightbox(index) {
       currentIndex = index;
       resetZoom();
@@ -486,23 +482,6 @@ color: yellow;
     function closeLightbox() {
       lightbox.classList.add('hidden');
       document.body.style.overflow = '';
-      resetZoom();
-    }
-
-    function updateLightbox() {
-      const item = IMAGES[currentIndex];
-      const lightboxCrown = document.getElementById('lightbox-crown');
-      lightboxImg.src = item.src;
-      lightboxImg.alt = item.title;
-      lightboxTitle.textContent = item.title;
-      lightboxCounter.textContent = `${currentIndex + 1} / ${IMAGES.length}`;
-
-      if (item.isChoice) {
-        lightboxCrown.classList.remove('hidden');
-      } else {
-        lightboxCrown.classList.add('hidden');
-      }
-
       resetZoom();
     }
 
@@ -531,10 +510,11 @@ color: yellow;
       updateLightbox();
     }
 
-    /* Zoom & Pan Implementation */
     function setTransform() {
       lightboxImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-      zoomLevelBtn.textContent = `${Math.round(zoomLevel * 100)}%`;
+      if (zoomLevelBtn) {
+        zoomLevelBtn.textContent = `${Math.round(zoomLevel * 100)}%`;
+      }
 
       if (zoomLevel > 1) {
         imgWrapper.classList.add('can-drag');
@@ -571,7 +551,6 @@ color: yellow;
     function setupZoomAndPan() {
       const stage = document.getElementById('lightbox-stage');
 
-      // Mouse Wheel Zoom
       stage.addEventListener('wheel', (e) => {
         if (lightbox.classList.contains('hidden')) return;
         e.preventDefault();
@@ -583,7 +562,6 @@ color: yellow;
         }
       }, { passive: false });
 
-      // Drag / Pan Events
       imgWrapper.addEventListener('mousedown', (e) => {
         if (zoomLevel <= 1) return;
         isDragging = true;
@@ -605,7 +583,6 @@ color: yellow;
       });
     }
 
-    /* Mobile Touch Swipe Implementation for Lightbox Stage */
     function setupMobileSwipe() {
       const stage = document.getElementById('lightbox-stage');
 
@@ -619,7 +596,6 @@ color: yellow;
 
       stage.addEventListener('touchend', (e) => {
         if (lightbox.classList.contains('hidden')) return;
-        // Skip swipe navigation when zoomed in so panning works naturally
         if (zoomLevel > 1) return;
 
         if (e.changedTouches.length === 1) {
@@ -633,14 +609,13 @@ color: yellow;
     function handleSwipeGesture() {
       const deltaX = touchEndX - touchStartX;
       const deltaY = touchEndY - touchStartY;
-      const minSwipeDistance = 45; // Minimum horizontal px distance required
+      const minSwipeDistance = 45;
 
-      // Horizontal swipe dominates over vertical movement
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
         if (deltaX < 0) {
-          nextImage(); // Swipe Left -> Next
+          nextImage();
         } else {
-          prevImage(); // Swipe Right -> Previous
+          prevImage();
         }
       }
     }
@@ -658,7 +633,6 @@ color: yellow;
       });
     }
 
-    /* Download Functions */
     async function fetchAndDownload(url, filename) {
       try {
         const response = await fetch(url);
@@ -686,7 +660,6 @@ color: yellow;
       fetchAndDownload(img.src, img.title);
     }
 
-    // Download All Images as a ZIP File
     async function downloadAllImages() {
       if (IMAGES.length === 0) return;
 
@@ -724,7 +697,5 @@ color: yellow;
       }
     }
   </script>
-
-
 </body>
 </html>
